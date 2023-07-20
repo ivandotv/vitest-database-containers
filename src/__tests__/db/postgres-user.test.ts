@@ -1,47 +1,39 @@
 import { Pool } from 'pg'
 import { PostgresRepository } from '../../postgres/postgres-repository'
 import {
-  connectToTestDatbase,
+  createAndConnectToTestDatbase,
+  disconnectFromTestDatabase,
   resetDatabase,
   seedDatabase
 } from './utils/postgres-test-utils'
 
 import {
-  expect,
-  test,
-  describe,
+  afterAll,
+  afterEach,
   beforeAll,
   beforeEach,
-  afterEach,
-  afterAll
+  describe,
+  expect,
+  test
 } from 'vitest'
 
 let connection: Pool
 
-describe('Postgres', () => {
+describe('Postgres user', () => {
   beforeAll(async () => {
-    connection = await connectToTestDatbase()
+    connection = await createAndConnectToTestDatbase()
   })
 
   beforeEach(async () => {
+    // await resetDatabase(connection)
     await seedDatabase(connection)
   })
-
   afterEach(async () => {
-    //reset database
     await resetDatabase(connection)
   })
 
   afterAll(async () => {
-    await connection.end()
-  })
-
-  test('Get user by email', async () => {
-    const email = 'ivan@example.com'
-    const repository = new PostgresRepository(connection)
-    const user = await repository.getUserByEmail(email)
-
-    expect(user?.email).toBe(email)
+    await disconnectFromTestDatabase(connection)
   })
 
   test('Create user', async () => {

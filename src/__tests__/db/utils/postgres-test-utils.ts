@@ -3,10 +3,9 @@ import { resolve } from 'node:path'
 import { Pool, PoolConfig } from 'pg'
 import { postgresConnection } from '../../../postgres/postgres-connection'
 
-let seedFile: string
-const testDbName = `TEST_DB_${process.env.JEST_WORKER_ID}`
+const testDbName = `test_db_${process.env.VITEST_POOL_ID}`.toLowerCase()
 
-export async function createTestDatabase() {
+async function createTestDatabase(dbName: string) {
   const connectionConfig: PoolConfig = {
     host: 'localhost',
     user: process.env.POSTGRES_USER,
@@ -17,20 +16,18 @@ export async function createTestDatabase() {
 
   const connection = await postgresConnection(connectionConfig)
 
-  await connection.query(`CREATE DATABASE ${testDbName}`)
+  await connection.query(`CREATE DATABASE ${dbName}`)
+
   await connection.end()
 }
 
-export async function connectToTestDatbase() {
-  //in watch mode run only once
-  if (process.env.JEST_FIRST_RUN === 'yes') {
-    await createTestDatabase()
-  }
+export async function createAndConnectToTestDatbase() {
+  await createTestDatabase(testDbName)
 
   const connectionConfig: PoolConfig = {
     host: 'localhost',
     user: process.env.POSTGRES_USER,
-    database: process.env.POSTGRES_DB,
+    database: testDbName,
     password: process.env.POSTGRES_PASSWORD,
     port: Number(process.env.POSTGRES_PORT)
   }
@@ -38,20 +35,22 @@ export async function connectToTestDatbase() {
   return postgresConnection(connectionConfig)
 }
 
+export function disconnectFromTestDatabase(client: Pool) {
+  return client.end()
+}
+
 export async function seedDatabase(client: Pool) {
-  if (!seedFile) {
-    //load seed file only once
-    seedFile = await readFile(resolve(__dirname, './seed.sql'), {
-      encoding: 'utf8'
-    })
-  }
+  const seedFile = await readFile(resolve(__dirname, './seed.sql'), {
+    encoding: 'utf8'
+  })
   await client.query(seedFile)
 }
 
-export async function resetDatabase(client: Pool) {
+export async function resetDatabase(client: Pool, schemaName = 'public') {
   // truncate all tables in the database
   // https://stackoverflow.com/a/12082038/1489487
-  await client.query(`
+
+  const truncateTablesQuery = `
       DO
       $func$
       BEGIN
@@ -59,9 +58,11 @@ export async function resetDatabase(client: Pool) {
           SELECT 'TRUNCATE TABLE ' || string_agg(oid::regclass::text, ', ') || ' CASCADE'
             FROM pg_class
             WHERE relkind = 'r'
-            AND relnamespace = 'public'::regnamespace
+            AND relnamespace = '${schemaName}'::regnamespace
         );
       END
       $func$;
-    `)
+    `
+
+  await client.query(truncateTablesQuery)
 }

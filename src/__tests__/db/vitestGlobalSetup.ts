@@ -4,31 +4,21 @@ import timeSpan from 'time-span'
 
 global.containers = []
 
-let firstRun = true
-
 export async function setup(_config: any) {
-  //TODO - switc to vitest
-  console.log('vitest global setup started')
-  process.env.JEST_FIRST_RUN = firstRun ? 'yes' : 'no'
+  console.log('\nsetup started')
+  const end = timeSpan()
 
-  if (firstRun) {
-    console.log('\nsetup started')
-    const end = timeSpan()
+  const mongoContainer = initializeMongo()
+  const postgresContainer = initializePostgres()
 
-    const mongoContainer = initializeMongo()
-    const postgresContainer = initializePostgres()
+  const startedContainers = await Promise.all([
+    mongoContainer,
+    postgresContainer
+  ])
 
-    const startedContainers = await Promise.all([
-      mongoContainer,
-      postgresContainer
-    ])
+  global.containers.push(...startedContainers)
 
-    global.containers.push(...startedContainers)
-
-    console.log(`setup done in: ${end.seconds()} seconds`)
-  }
-
-  firstRun = false
+  console.log(`setup done in: ${end.seconds()} seconds`)
 }
 
 async function initializeMongo() {
