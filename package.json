@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/ivandotv/jest-database-containers#readme",
   "dependencies": {
-    "mongodb": "^4.6.0",
+    "mongodb": "^6.0.0",
     "pg": "^8.7.3"
   },
   "devDependencies": {
