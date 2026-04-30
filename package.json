@@ -36,7 +36,7 @@
     "lint-staged": "^15.2.2",
     "microbundle": "^0.15.1",
     "prettier": "^3.2.5",
-    "shx": "^0.3.4",
+    "shx": "^0.4.0",
     "testcontainers": "^10.7.2",
     "time-span": "^5.1.0",
     "typescript": "^5.4.2",
